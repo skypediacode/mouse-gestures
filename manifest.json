@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Mouse Gestures – Just Work & Open Source",
+  "name": "Mouse Gestures – Open Source & No-tracking",
   "version": "1.0.0",
-  "description": "Lightweight mouse gestures using the right mouse button.",
+  "description": "No-tracking, open-source right-click mouse gestures that just work. Tab management, navigation & scrolling. 100% secure & private.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

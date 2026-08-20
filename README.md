@@ -1,4 +1,4 @@
-# Mouse Gestures – Just Work & Open Source
+# Mouse Gestures – Open Source & No-tracking
 
 Small Manifest V3 Chrome extension for right-button mouse gestures:
 
