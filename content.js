@@ -63,13 +63,26 @@
     label.style.cssText = [
       "position:fixed",
       "display:none",
-      "padding:4px 8px",
-      "border-radius:4px",
-      "background:rgba(32, 33, 36, .92)",
+      "left:50%",
+      "top:85vh",
+      "transform:translate(-50%, -50%)",
+      "box-sizing:border-box",
+      "width:120px",
+      "max-width:min(280px, calc(100vw - 32px))",
+      "min-height:90px",
+      "padding:14px 18px",
+      "align-items:center",
+      "justify-content:center",
+      "text-align:center",
+      "border-radius:20px",
+      "border:1px solid rgba(255, 255, 255, .18)",
+      "background:rgba(49, 65, 84, .75)",
+      "backdrop-filter:blur(8px)",
+      "-webkit-backdrop-filter:blur(8px)",
       "color:#fff",
-      "font:18px/1.2 system-ui, sans-serif",
-      "white-space:nowrap",
-      "box-shadow:0 1px 4px rgba(0, 0, 0, .3)"
+      "font:600 18px/1.25 system-ui, sans-serif",
+      "white-space:normal",
+      "box-shadow:0 6px 18px rgba(24, 36, 52, .22)"
     ].join(";");
 
     svg.appendChild(line);
@@ -97,9 +110,7 @@
     }
 
     trail.label.textContent = name;
-    trail.label.style.display = "block";
-    trail.label.style.left = `${Math.min(x + 14, Math.max(0, window.innerWidth - 150))}px`;
-    trail.label.style.top = `${Math.min(y + 14, Math.max(0, window.innerHeight - 30))}px`;
+    trail.label.style.display = "flex";
   }
 
   function removeTrail(fade = false) {
