@@ -8,10 +8,23 @@
   const MAX_GESTURE_SEGMENTS = 3;
   const DEFAULT_GESTURES = { L: "back", R: "forward", U: "scroll-top", D: "scroll-bottom", DR: "close-tab", LU: "reopen-tab" };
   const ACTION_LABELS = { back: "Go back", forward: "Go forward", "scroll-up": "Scroll up", "scroll-down": "Scroll down", "scroll-left": "Scroll left", "scroll-right": "Scroll right", "scroll-top": "Scroll to top", "scroll-bottom": "Scroll to bottom", "close-tab": "Close tab", "close-tabs-left": "Close tabs on the left", "close-tabs-right": "Close tabs on the right", "close-other-tabs": "Close other tabs", "reopen-tab": "Reopen closed tab", "new-tab": "Open new tab", reload: "Reload page", "reload-bypass-cache": "Reload without cache", "duplicate-tab": "Duplicate tab" };
+  let displaySettings = { showTrail: true, showGestureName: true };
   let gestureMap = { ...DEFAULT_GESTURES };
-  chrome.storage.sync.get({ gestures: Object.entries(DEFAULT_GESTURES).map(([gesture, action]) => ({ gesture, action })) }, (result) => {
+  chrome.storage.sync.get({ gestures: Object.entries(DEFAULT_GESTURES).map(([gesture, action]) => ({ gesture, action })), showTrail: true, showGestureName: true }, (result) => {
+    displaySettings = { showTrail: result.showTrail, showGestureName: result.showGestureName };
     gestureMap = {};
     (result.gestures || []).forEach(({ gesture, action }) => { if (gesture && action && action !== "screenshot") gestureMap[gesture] = action; });
+  });
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "sync") return;
+    if (changes.showTrail) {
+      displaySettings.showTrail = changes.showTrail.newValue;
+      if (trail) trail.line.style.display = displaySettings.showTrail ? "" : "none";
+    }
+    if (changes.showGestureName) {
+      displaySettings.showGestureName = changes.showGestureName.newValue;
+      if (!displaySettings.showGestureName && trail) trail.label.style.display = "none";
+    }
   });
 
   let gesture = null;
@@ -37,6 +50,7 @@
     svg.style.cssText = "display:block;width:100%;height:100%;";
 
     const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    line.style.display = displaySettings.showTrail ? "" : "none";
     line.setAttribute("fill", "none");
     line.setAttribute("stroke", "#4285f4");
     line.setAttribute("stroke-width", "6");
@@ -74,7 +88,7 @@
   }
 
   function updateTrailLabel(x, y) {
-    if (!trail || !gesture || gesture.directions.length === 0) return;
+    if (!trail || !displaySettings.showGestureName || !gesture || gesture.directions.length === 0) return;
 
     const name = ACTION_LABELS[gestureMap[gesture.directions.join("")]];
     if (!name) {
