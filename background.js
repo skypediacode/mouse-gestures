@@ -5,6 +5,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   sendResponse({ ok: true });
 });
 
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== "keepalive") return;
+  // Holding the port open and receiving its pings resets the idle timer, which
+  // keeps this worker running so gesture actions never wait for a cold start.
+  port.onMessage.addListener(() => {});
+});
+
 function handle(message, sender) {
   // Sent when a gesture begins; the acknowledgement alone is the point, since
   // receiving it is what starts the worker before the action arrives.

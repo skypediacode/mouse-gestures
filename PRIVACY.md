@@ -1,7 +1,7 @@
 # Privacy Policy for Mouse Gestures
 
 **Effective Date:** August 20, 2026  
-**Last Updated:** August 20, 2026  
+**Last Updated:** August 21, 2026  
 
 This Privacy Policy applies to the **Mouse Gestures – Open Source & No-tracking** browser extension for Google Chrome.
 
@@ -11,7 +11,7 @@ This Privacy Policy applies to the **Mouse Gestures – Open Source & No-trackin
 
 We believe in complete privacy and transparency. **Mouse Gestures does not collect, store, transmit, or share any personal information, browsing history, or user data of any kind.**
 
-The extension operates 100% locally on your device without communicating with any external servers, third-party services, or analytics providers.
+The extension operates 100% locally on your device and never communicates with any external servers, third-party services, or analytics providers. The only data that can leave your device is your own gesture configuration, and only when you have Chrome Sync switched on — Chrome performs that sync, not this extension. See Section 3.
 
 ---
 
@@ -31,7 +31,7 @@ To function properly, the extension requests the absolute minimum necessary Chro
 | Permission | Purpose |
 | :--- | :--- |
 | **`sessions`** | Required solely to reopen the most recently closed tab when you perform the "Reopen closed tab" gesture. |
-| **`storage`** | Used exclusively to save and synchronize your custom gesture preferences and UI display options locally via `chrome.storage.sync`. |
+| **`storage`** | Used exclusively to save your custom gesture assignments and UI display options. These are written through `chrome.storage.sync`, so when Chrome Sync is enabled, Chrome replicates them to your signed-in devices through your Google Account. That transfer is performed by Chrome itself and covers your settings only — never browsing data. With Chrome Sync off, the settings stay on your device. |
 | **Content Script Matches (`http://*/*`, `https://*/*`)** | Scoped strictly to standard HTTP and HTTPS web pages to attach gesture event listeners. No broad `host_permissions` are requested or used. |
 
 The extension does not request or use any `host_permissions`, nor does it extract, inspect, or transfer any user or browsing data.

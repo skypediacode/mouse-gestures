@@ -190,9 +190,48 @@
     if (attempt < 2) setTimeout(() => sendAction(action, attempt + 1), 80);
   }
 
-  // Manifest V3 stops the service worker after 30 idle seconds, so the first
-  // tab action after a pause pays its startup cost. Waking it as soon as the
-  // gesture starts hides that behind the time the gesture takes to draw.
+  // Manifest V3 stops the service worker after 30 idle seconds, which made the
+  // first tab action after a pause slow. An open port plus a ping well under
+  // that timeout keeps the worker resident, so tab actions stay instant.
+  const KEEPALIVE_INTERVAL = 20000;
+  let keepAlivePort = null;
+
+  function connectKeepAlive() {
+    // A missing runtime id means the extension was reloaded and this frame's
+    // context is dead for good, so reconnecting would loop forever.
+    if (keepAlivePort || !chrome.runtime?.id) return;
+
+    try {
+      keepAlivePort = chrome.runtime.connect({ name: "keepalive" });
+    } catch (error) {
+      return;
+    }
+
+    keepAlivePort.onDisconnect.addListener(() => {
+      keepAlivePort = null;
+      // Chrome before 116 caps a port at five minutes, so reconnect promptly.
+      setTimeout(connectKeepAlive, 500);
+    });
+  }
+
+  function pingKeepAlive() {
+    if (!keepAlivePort) {
+      connectKeepAlive();
+      return;
+    }
+    // Only a visible tab can receive a gesture, and every window has one, so
+    // hidden tabs can stay quiet without ever letting the worker go idle.
+    if (document.hidden) return;
+
+    try {
+      keepAlivePort.postMessage({ action: "keepalive" });
+    } catch (error) {
+      keepAlivePort = null;
+    }
+  }
+
+  // Belt and braces for the moments the worker stops anyway: waking it as the
+  // gesture starts hides any startup cost behind the time it takes to draw.
   function warmServiceWorker() {
     if (!gesture || gesture.warmed) return;
     gesture.warmed = true;
@@ -305,4 +344,10 @@
     gesture = null;
     removeTrail();
   });
+
+  connectKeepAlive();
+  setInterval(pingKeepAlive, KEEPALIVE_INTERVAL);
+  // A tab returning to the foreground pings at once, so a worker that stopped
+  // while every tab was hidden is back before the first gesture arrives.
+  document.addEventListener("visibilitychange", pingKeepAlive);
 })();
