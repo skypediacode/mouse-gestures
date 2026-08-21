@@ -6,23 +6,17 @@
   const SEGMENT_THRESHOLD = 18;
   const MIN_GESTURE_DISTANCE = 36;
   const MAX_GESTURE_SEGMENTS = 3;
-  const DEFAULT_GESTURES = { L: "back", R: "forward", U: "scroll-top", D: "scroll-bottom", DR: "close-tab", LU: "reopen-tab" };
-  const ACTION_LABELS = { back: "Go back", forward: "Go forward", "scroll-up": "Scroll up", "scroll-down": "Scroll down", "scroll-left": "Scroll left", "scroll-right": "Scroll right", "scroll-top": "Scroll to top", "scroll-bottom": "Scroll to bottom", "close-tab": "Close tab", "close-tabs-left": "Close tabs on the left", "close-tabs-right": "Close tabs on the right", "close-other-tabs": "Close other tabs", "reopen-tab": "Reopen closed tab", "new-tab": "Open new tab", reload: "Reload page", "reload-bypass-cache": "Reload without cache", "duplicate-tab": "Duplicate tab" };
+  // GESTURE_ACTIONS, ACTION_LABELS, DEFAULT_GESTURES and toGestureMap come from
+  // actions.js, loaded ahead of this file by the manifest.
   let displaySettings = { showTrail: true, showGestureName: true };
-  let gestureMap = { ...DEFAULT_GESTURES };
-  chrome.storage.sync.get({ gestures: Object.entries(DEFAULT_GESTURES).map(([gesture, action]) => ({ gesture, action })), showTrail: true, showGestureName: true }, (result) => {
+  let gestureMap = toGestureMap(DEFAULT_GESTURES);
+  chrome.storage.sync.get({ gestures: DEFAULT_GESTURES, showTrail: true, showGestureName: true }, (result) => {
     displaySettings = { showTrail: result.showTrail, showGestureName: result.showGestureName };
-    gestureMap = {};
-    (result.gestures || []).forEach(({ gesture, action }) => { if (gesture && action && action !== "screenshot") gestureMap[gesture] = action; });
+    gestureMap = toGestureMap(result.gestures);
   });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "sync") return;
-    if (changes.gestures) {
-      gestureMap = {};
-      (changes.gestures.newValue || []).forEach(({ gesture, action }) => {
-        if (gesture && action && action !== "screenshot") gestureMap[gesture] = action;
-      });
-    }
+    if (changes.gestures) gestureMap = toGestureMap(changes.gestures.newValue);
     if (changes.showTrail) {
       displaySettings.showTrail = changes.showTrail.newValue;
       if (trail) {

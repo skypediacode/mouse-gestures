@@ -5,11 +5,12 @@
 This repository is a dependency-free Chrome Manifest V3 extension. Runtime code is kept at the repository root:
 
 - `manifest.json` defines permissions, the service worker, options page, and content-script entry points.
-- `background.js` handles browser-level tab and navigation actions.
-- `content.js` captures gestures and renders the pointer-transparent trail overlay.
+- `actions.js` is the single source of truth for the action list, their display labels, and the default gesture map. It is loaded ahead of both `content.js` and `options.js`, so a new action is declared once and appears in the trail overlay and the settings dropdown together. Do not reintroduce a second copy of this list.
+- `background.js` handles browser-level tab actions. Anything the page can do for itself (history navigation, scrolling) is handled in `content.js` instead and never reaches the worker.
+- `content.js` captures gestures and renders the pointer-transparent trail overlay. It runs in subframes as well as the top frame, so keep its per-frame startup cost small.
 - `options.html`, `options.css`, and `options.js` implement the editable gesture settings UI.
 - `icons/` contains the editable SVG source and the PNG manifest icons; `screenshots/` contains store artwork.
-- `PRIVACY.md` documents data and permissions. `_inspect_zip/` is an inspection copy and should not be treated as source.
+- `PRIVACY.md` documents data and permissions.
 
 ## Build, Test, and Development Commands
 

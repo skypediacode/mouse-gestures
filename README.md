@@ -39,4 +39,4 @@ The icon source is an editable SVG at `icons/icon.svg`. The manifest references 
 
 ## Permissions
 
-The extension uses the `sessions` permission for reopening a closed tab, `storage` for synchronizing preferences, and content script matching (`http://*/*`, `https://*/*`) to install the gesture detector on standard web pages without requesting any broad `host_permissions`. Chrome-internal pages and the Chrome Web Store do not allow content scripts.
+The extension uses the `sessions` permission for reopening a closed tab, `storage` for synchronizing preferences, and content script matching (`http://*/*`, `https://*/*`) to install the gesture detector on standard web pages, including embedded frames so gestures work over embedded content, without requesting any broad `host_permissions`. Chrome-internal pages and the Chrome Web Store do not allow content scripts.

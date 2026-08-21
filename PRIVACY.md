@@ -32,7 +32,7 @@ To function properly, the extension requests the absolute minimum necessary Chro
 | :--- | :--- |
 | **`sessions`** | Required solely to reopen the most recently closed tab when you perform the "Reopen closed tab" gesture. |
 | **`storage`** | Used exclusively to save your custom gesture assignments and UI display options. These are written through `chrome.storage.sync`, so when Chrome Sync is enabled, Chrome replicates them to your signed-in devices through your Google Account. That transfer is performed by Chrome itself and covers your settings only — never browsing data. With Chrome Sync off, the settings stay on your device. |
-| **Content Script Matches (`http://*/*`, `https://*/*`)** | Scoped strictly to standard HTTP and HTTPS web pages to attach gesture event listeners. No broad `host_permissions` are requested or used. |
+| **Content Script Matches (`http://*/*`, `https://*/*`)** | Scoped strictly to standard HTTP and HTTPS web pages to attach gesture event listeners, in embedded frames as well as the top-level page so gestures work over embedded content. The script only observes mouse button and movement events; it does not read page content. No broad `host_permissions` are requested or used. |
 
 The extension does not request or use any `host_permissions`, nor does it extract, inspect, or transfer any user or browsing data.
 
