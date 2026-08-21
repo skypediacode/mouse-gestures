@@ -199,18 +199,6 @@
   // The service worker may be asleep or shutting down, so a dropped message is
   // normal. The listener always acknowledges; a missing ack means "not run".
   function sendAction(action, attempt = 0) {
-    // Preferred path: the port is already connected, so there is no channel to
-    // negotiate. It is fire-and-forget, so the sendMessage retry ladder below
-    // still stands behind it for the case where the port has quietly died.
-    if (keepAlivePort) {
-      try {
-        keepAlivePort.postMessage({ action });
-        return;
-      } catch (error) {
-        keepAlivePort = null;
-      }
-    }
-
     let pending;
     try {
       pending = chrome.runtime.sendMessage({ action });
@@ -235,54 +223,17 @@
     if (delay !== undefined) setTimeout(() => sendAction(action, attempt + 1), delay);
   }
 
-  // Manifest V3 stops the service worker after 30 idle seconds, which made the
-  // first tab action after a pause slow. An open port plus a ping well under
-  // that timeout keeps the worker resident, so tab actions stay instant.
-  const KEEPALIVE_INTERVAL = 20000;
-  let keepAlivePort = null;
-
-  function connectKeepAlive() {
-    // A missing runtime id means the extension was reloaded and this frame's
-    // context is dead for good, so reconnecting would loop forever.
-    if (keepAlivePort || !chrome.runtime?.id) return;
-
-    try {
-      keepAlivePort = chrome.runtime.connect({ name: "keepalive" });
-    } catch (error) {
-      return;
-    }
-
-    keepAlivePort.onDisconnect.addListener(() => {
-      keepAlivePort = null;
-      // Chrome before 116 caps a port at five minutes, so reconnect promptly.
-      setTimeout(connectKeepAlive, 500);
-    });
-  }
-
-  function pingKeepAlive() {
-    if (!keepAlivePort) {
-      connectKeepAlive();
-      return;
-    }
-    // Only a visible tab can receive a gesture, and every window has one, so
-    // hidden tabs can stay quiet without ever letting the worker go idle.
-    if (document.hidden) return;
-
-    try {
-      keepAlivePort.postMessage({ action: "keepalive" });
-    } catch (error) {
-      keepAlivePort = null;
-    }
-  }
-
-  // Belt and braces for the moments the worker stops anyway: waking it as the
-  // gesture starts hides any startup cost behind the time it takes to draw.
+  // Manifest V3 stops the worker after 30 idle seconds, and starting it again
+  // costs a fraction of a second. Waking it here -- as the trail appears, which
+  // is several hundred milliseconds before the release that runs the action --
+  // spends that startup on time the user is still drawing in. That makes an
+  // always-on keepalive unnecessary: the worker is already running by the time
+  // it is needed, and it stays stopped the rest of the time.
   function warmServiceWorker() {
     if (!gesture || gesture.warmed) return;
     gesture.warmed = true;
     try {
-      if (keepAlivePort) keepAlivePort.postMessage({ action: "wake" });
-      else Promise.resolve(chrome.runtime.sendMessage({ action: "wake" })).catch(() => {});
+      Promise.resolve(chrome.runtime.sendMessage({ action: "wake" })).catch(() => {});
     } catch (error) {
       // A worker that cannot be reached now is retried by sendAction later.
     }
@@ -408,10 +359,4 @@
     gesture = null;
     removeTrail();
   });
-
-  connectKeepAlive();
-  setInterval(pingKeepAlive, KEEPALIVE_INTERVAL);
-  // A tab returning to the foreground pings at once, so a worker that stopped
-  // while every tab was hidden is back before the first gesture arrives.
-  document.addEventListener("visibilitychange", pingKeepAlive);
 })();

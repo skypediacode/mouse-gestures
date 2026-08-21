@@ -5,18 +5,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   sendResponse({ ok: true });
 });
 
-chrome.runtime.onConnect.addListener((port) => {
-  if (port.name !== "keepalive") return;
-  // Holding the port open and receiving its pings resets the idle timer, which
-  // keeps this worker running so gesture actions never wait for a cold start.
-  // The port also carries the actions themselves: it is an already-established
-  // channel, so it skips the per-call setup a one-shot sendMessage pays.
-  port.onMessage.addListener((message) => {
-    if (message.action === "keepalive") return;
-    handle(message, port.sender);
-  });
-});
-
 function handle(message, sender) {
   // Sent when a gesture begins; the acknowledgement alone is the point, since
   // receiving it is what starts the worker before the action arrives.
@@ -33,20 +21,18 @@ function handle(message, sender) {
     return;
   }
 
-  if (message.action === "back" && sender.tab?.id !== undefined) {
-    chrome.tabs.goBack(sender.tab.id).catch(() => {});
-    return;
-  }
-
-  if (message.action === "forward" && sender.tab?.id !== undefined) {
-    chrome.tabs.goForward(sender.tab.id).catch(() => {});
-    return;
-  }
-
   if (["close-tabs-left", "close-tabs-right", "close-other-tabs"].includes(message.action) && sender.tab?.id !== undefined) {
     chrome.tabs.query({ windowId: sender.tab.windowId }, (tabs) => {
       const current = tabs.find(tab => tab.id === sender.tab.id)?.index ?? 0;
-      const ids = tabs.filter(tab => tab.id !== sender.tab.id && (message.action === "close-other-tabs" || message.action === "close-tabs-left" ? tab.index < current : tab.index > current)).map(tab => tab.id).filter(id => id !== undefined);
+      // Spelled out per action: folding these into one ternary previously made
+      // close-other-tabs share the close-tabs-left branch, so it closed only
+      // the tabs before the current one.
+      const keeps = {
+        "close-tabs-left": (index) => index < current,
+        "close-tabs-right": (index) => index > current,
+        "close-other-tabs": () => true
+      }[message.action];
+      const ids = tabs.filter(tab => tab.id !== sender.tab.id && keeps(tab.index)).map(tab => tab.id).filter(id => id !== undefined);
       if (ids.length) chrome.tabs.remove(ids);
     });
     return;
