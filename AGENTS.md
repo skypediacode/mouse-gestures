@@ -24,9 +24,32 @@ For a quick manifest check, inspect `manifest.json` as valid JSON before loading
 
 Keep the existing plain JavaScript/CSS/HTML style: two-space indentation where code is expanded, semicolon-terminated JavaScript, and descriptive camelCase identifiers (for example, `showGestureName`). Keep action and gesture values stable and lowercase/kebab-case as defined in `options.js` and `manifest.json`. Avoid introducing dependencies or a bundler unless the project’s structure is intentionally revised.
 
+## Gesture Latency & Overlay Rendering
+
+Everything on the gesture path — event handling, trail drawing, and the `chrome.runtime` call that dispatches the action — runs on the page's main thread. Work added to the overlay is therefore delay added to every action, and a gesture that feels slow is far more often a rendering cost here than anything in `background.js`.
+
+The trail overlay spans the whole viewport, so any property that makes Chrome repaint through it is paid against the entire page, and the cost grows with how much the page draws underneath. Do not reintroduce `backdrop-filter` (it forces Chrome to snapshot and blur everything behind the element), `filter` on the viewport-sized SVG, or any effect that samples the page behind the overlay. Prefer opaque backgrounds, `box-shadow`, and a second stroked polyline over filters, and keep `contain` on the overlay so its paints cannot invalidate the page.
+
+`updateTrail` runs on every `mousemove`. Keep it incremental — append to the serialized `points` string rather than rebuilding it from the full array, and do not add per-move work whose cost scales with trail length.
+
+## Diagnosing Slow Actions
+
+Measure before changing anything; this path is unusually easy to misdiagnose. Instrument both halves separately — the time a message spends in transit to the worker, and the time the `chrome.tabs` call itself takes — because they point at completely different causes and only one number is usually the culprit.
+
+Beware these traps, each of which has produced a confidently wrong diagnosis:
+
+- **Service-worker cold starts cost roughly 50–200ms, not seconds.** A multi-second delay is never explained by the worker being asleep, and a keepalive is not a fix for one. The worker's log includes its uptime; check it before assuming a restart happened.
+- **Timers are throttled in hidden tabs**, to once per second and to once per minute after a few minutes. A `setInterval` drift check therefore reports large fake stalls in any background tab, and content scripts run in every tab. Gate any such measurement on `document.hidden` being false at both ends of the window.
+- **The `chrome://extensions` Errors page aggregates every tab.** Use the specific page's console, or the service worker's console, to attribute a message to the context that produced it.
+- **Smooth scrolling does not prove an unblocked main thread.** Chrome scrolls on the compositor thread, so a page whose main thread is wedged still scrolls normally.
+
+Remove all diagnostic logging before committing; released code should not log to page or worker consoles.
+
 ## Testing Guidelines
 
 No test framework or coverage threshold is configured. For changes, manually verify gesture recognition, each affected browser action, settings persistence, the trail/name display toggles, and options-page behavior after an extension reload. Confirm that permissions remain limited to the behavior documented in `README.md` and `PRIVACY.md`.
+
+Because a recognized gesture consumes `mouseup`, `auxclick`, and `contextmenu` before the page sees them, verify changes to that suppression against sites with their own right-click handling (for example, editors and file-manager UIs) as well as ordinary pages, and confirm that an unrecognized gesture still leaves the normal context menu intact. Check latency on a heavy, script-dense page and not only on a trivial one — overlay costs scale with page content, so a blank page hides them.
 
 ## Commit & Pull Request Guidelines
 

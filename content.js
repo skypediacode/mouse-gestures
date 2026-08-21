@@ -25,7 +25,11 @@
     }
     if (changes.showTrail) {
       displaySettings.showTrail = changes.showTrail.newValue;
-      if (trail) trail.line.style.display = displaySettings.showTrail ? "" : "none";
+      if (trail) {
+        const display = displaySettings.showTrail ? "" : "none";
+        trail.line.style.display = display;
+        trail.shadow.style.display = display;
+      }
     }
     if (changes.showGestureName) {
       displaySettings.showGestureName = changes.showGestureName.newValue;
@@ -35,6 +39,10 @@
 
   let gesture = null;
   let suppressNextContextMenu = false;
+  // A right-button release also raises auxclick, which pages listen to just as
+  // readily as contextmenu; leaving it through reintroduces the page work the
+  // mouseup guard exists to avoid.
+  let suppressNextAuxClick = false;
   let trail = null;
   let trailRemovalTimer = null;
 
@@ -47,7 +55,10 @@
       "inset:0",
       "z-index:2147483647",
       "pointer-events:none",
-      "overflow:hidden"
+      "overflow:hidden",
+      // Isolate the overlay's paints from the page so redrawing the trail
+      // never invalidates anything underneath it.
+      "contain:layout paint style"
     ].join(";");
 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -62,7 +73,10 @@
     line.setAttribute("stroke-width", "6");
     line.setAttribute("stroke-linecap", "round");
     line.setAttribute("stroke-linejoin", "round");
-    line.setAttribute("filter", "drop-shadow(0 1px 1px rgba(0, 0, 0, .35))");
+    // No drop-shadow filter here: the SVG is viewport-sized, so filtering it
+    // repaints the whole viewport on every mousemove, and the cost grows with
+    // whatever the page is drawing underneath. A stroked twin underneath gives
+    // the same lift for the price of one more polyline.
     line.setAttribute("points", `${x},${y}`);
 
     const label = document.createElement("div");
@@ -82,20 +96,28 @@
       "text-align:center",
       "border-radius:20px",
       "border:1px solid rgba(255, 255, 255, .18)",
-      "background:rgba(49, 65, 84, .75)",
-      "backdrop-filter:blur(8px)",
-      "-webkit-backdrop-filter:blur(8px)",
+      // An opaque background replaces backdrop-filter: blurring the backdrop
+      // makes Chrome snapshot and blur the entire page behind the label, which
+      // is the single most expensive thing the overlay used to do.
+      "background:rgb(49, 65, 84)",
       "color:#fff",
       "font:600 18px/1.25 system-ui, sans-serif",
       "white-space:normal",
       "box-shadow:0 6px 18px rgba(24, 36, 52, .22)"
     ].join(";");
 
+    // Drawn first, so it sits behind the trail and reads as its shadow.
+    const shadow = line.cloneNode(false);
+    shadow.setAttribute("stroke", "rgba(0, 0, 0, .35)");
+    shadow.setAttribute("stroke-width", "7");
+    shadow.setAttribute("transform", "translate(0, 1)");
+
+    svg.appendChild(shadow);
     svg.appendChild(line);
     overlay.appendChild(svg);
     overlay.appendChild(label);
     (document.documentElement || document.body).appendChild(overlay);
-    trail = { overlay, line, label, points: [[x, y]] };
+    trail = { overlay, line, shadow, label, points: [[x, y]], pointsAttribute: `${x},${y}` };
   }
 
   function updateTrail(x, y) {
@@ -103,7 +125,11 @@
     const previous = trail.points[trail.points.length - 1];
     if (Math.hypot(x - previous[0], y - previous[1]) < 4) return;
     trail.points.push([x, y]);
-    trail.line.setAttribute("points", trail.points.map((point) => point.join(",")).join(" "));
+    // Append to the serialized string rather than rebuilding it from every
+    // point, which turned a long trail into quadratic work per mousemove.
+    trail.pointsAttribute += ` ${x},${y}`;
+    trail.line.setAttribute("points", trail.pointsAttribute);
+    trail.shadow.setAttribute("points", trail.pointsAttribute);
   }
 
   function updateTrailLabel() {
@@ -173,6 +199,18 @@
   // The service worker may be asleep or shutting down, so a dropped message is
   // normal. The listener always acknowledges; a missing ack means "not run".
   function sendAction(action, attempt = 0) {
+    // Preferred path: the port is already connected, so there is no channel to
+    // negotiate. It is fire-and-forget, so the sendMessage retry ladder below
+    // still stands behind it for the case where the port has quietly died.
+    if (keepAlivePort) {
+      try {
+        keepAlivePort.postMessage({ action });
+        return;
+      } catch (error) {
+        keepAlivePort = null;
+      }
+    }
+
     let pending;
     try {
       pending = chrome.runtime.sendMessage({ action });
@@ -186,8 +224,15 @@
     );
   }
 
+  // A cold start costs a few hundred milliseconds, so two tries at 80ms gave
+  // up before a starting worker could ever answer. Backing off to roughly
+  // 1.5s total covers a genuine start while still failing fast when the worker
+  // is unreachable for good.
+  const RETRY_DELAYS = [100, 200, 400, 800];
+
   function retryAction(action, attempt) {
-    if (attempt < 2) setTimeout(() => sendAction(action, attempt + 1), 80);
+    const delay = RETRY_DELAYS[attempt];
+    if (delay !== undefined) setTimeout(() => sendAction(action, attempt + 1), delay);
   }
 
   // Manifest V3 stops the service worker after 30 idle seconds, which made the
@@ -236,7 +281,8 @@
     if (!gesture || gesture.warmed) return;
     gesture.warmed = true;
     try {
-      Promise.resolve(chrome.runtime.sendMessage({ action: "wake" })).catch(() => {});
+      if (keepAlivePort) keepAlivePort.postMessage({ action: "wake" });
+      else Promise.resolve(chrome.runtime.sendMessage({ action: "wake" })).catch(() => {});
     } catch (error) {
       // A worker that cannot be reached now is retried by sendAction later.
     }
@@ -318,10 +364,20 @@
     gesture = null;
 
     if (action) {
+      // The page's own mouseup handlers are what wedge the main thread on
+      // script-heavy sites, and a queued extension message cannot leave the
+      // renderer until that thread is free. Claiming the event here means the
+      // page never runs them, so the action is not stuck behind them.
+      event.stopPropagation();
+      event.preventDefault();
+
       // contextmenu fires after mouseup in Chrome. This flag preserves ordinary clicks.
       suppressNextContextMenu = true;
-      removeTrail(true);
+      suppressNextAuxClick = true;
+      // Dispatch before touching the DOM: removeTrail's style writes can force
+      // layout, and any work done first is delay added to the action.
       execute(action);
+      removeTrail(true);
     } else {
       removeTrail();
     }
@@ -330,6 +386,14 @@
   window.addEventListener("mousedown", begin, true);
   window.addEventListener("mousemove", move, true);
   window.addEventListener("mouseup", end, true);
+
+  window.addEventListener("auxclick", (event) => {
+    if (suppressNextAuxClick) {
+      suppressNextAuxClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
 
   window.addEventListener("contextmenu", (event) => {
     if (suppressNextContextMenu) {

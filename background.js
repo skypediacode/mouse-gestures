@@ -9,7 +9,12 @@ chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "keepalive") return;
   // Holding the port open and receiving its pings resets the idle timer, which
   // keeps this worker running so gesture actions never wait for a cold start.
-  port.onMessage.addListener(() => {});
+  // The port also carries the actions themselves: it is an already-established
+  // channel, so it skips the per-call setup a one-shot sendMessage pays.
+  port.onMessage.addListener((message) => {
+    if (message.action === "keepalive") return;
+    handle(message, port.sender);
+  });
 });
 
 function handle(message, sender) {
