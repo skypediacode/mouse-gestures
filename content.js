@@ -184,10 +184,9 @@
 
   function recognizedGesture() {
     if (!gesture || gesture.distance < MIN_GESTURE_DISTANCE) return null;
-
-    // Falling back to the last matched path keeps the executed action equal to
-    // the label the user saw; a stray segment on release must not cancel it.
-    return gestureMap[gesture.directions.join("")] || gesture.matchedAction || null;
+    // A gesture must match in full. A matched prefix such as DR must not run
+    // after the user continues drawing and turns it into an unmapped gesture.
+    return gestureMap[gesture.directions.join("")] || null;
   }
 
   // The service worker may be asleep or shutting down, so a dropped message is
@@ -293,7 +292,7 @@
     }
 
     const matched = gestureMap[gesture.directions.join("")];
-    if (matched) gesture.matchedAction = matched;
+    gesture.matchedAction = matched || null;
     updateTrailLabel();
   }
 
