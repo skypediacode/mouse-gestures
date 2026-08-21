@@ -1,4 +1,15 @@
-chrome.runtime.onMessage.addListener((message, sender) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // The acknowledgement lets the content script tell a dropped message (worker
+  // asleep or shutting down) apart from one that ran, so it can safely retry.
+  handle(message, sender);
+  sendResponse({ ok: true });
+});
+
+function handle(message, sender) {
+  // Sent when a gesture begins; the acknowledgement alone is the point, since
+  // receiving it is what starts the worker before the action arrives.
+  if (message.action === "wake") return;
+
   if (message.action === "close-tab" && sender.tab?.id !== undefined) {
     chrome.tabs.remove(sender.tab.id);
     return;
@@ -35,4 +46,4 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   else if (message.action === "reload") chrome.tabs.reload(tabId);
   else if (message.action === "reload-bypass-cache") chrome.tabs.reload(tabId, { bypassCache: true });
   else if (message.action === "duplicate-tab") chrome.tabs.duplicate(tabId);
-});
+}

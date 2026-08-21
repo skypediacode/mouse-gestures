@@ -106,10 +106,10 @@
     trail.line.setAttribute("points", trail.points.map((point) => point.join(",")).join(" "));
   }
 
-  function updateTrailLabel(x, y) {
-    if (!trail || !displaySettings.showGestureName || !gesture || gesture.directions.length === 0) return;
+  function updateTrailLabel() {
+    if (!trail || !displaySettings.showGestureName || !gesture) return;
 
-    const name = ACTION_LABELS[gestureMap[gesture.directions.join("")]];
+    const name = ACTION_LABELS[gesture.matchedAction];
     if (!name) {
       trail.label.style.display = "none";
       return;
@@ -165,8 +165,42 @@
   function recognizedGesture() {
     if (!gesture || gesture.distance < MIN_GESTURE_DISTANCE) return null;
 
-    const path = gesture.directions.join("");
-    return gestureMap[path] || null;
+    // Falling back to the last matched path keeps the executed action equal to
+    // the label the user saw; a stray segment on release must not cancel it.
+    return gestureMap[gesture.directions.join("")] || gesture.matchedAction || null;
+  }
+
+  // The service worker may be asleep or shutting down, so a dropped message is
+  // normal. The listener always acknowledges; a missing ack means "not run".
+  function sendAction(action, attempt = 0) {
+    let pending;
+    try {
+      pending = chrome.runtime.sendMessage({ action });
+    } catch (error) {
+      pending = Promise.reject(error);
+    }
+
+    Promise.resolve(pending).then(
+      (response) => { if (!response?.ok) retryAction(action, attempt); },
+      () => retryAction(action, attempt)
+    );
+  }
+
+  function retryAction(action, attempt) {
+    if (attempt < 2) setTimeout(() => sendAction(action, attempt + 1), 80);
+  }
+
+  // Manifest V3 stops the service worker after 30 idle seconds, so the first
+  // tab action after a pause pays its startup cost. Waking it as soon as the
+  // gesture starts hides that behind the time the gesture takes to draw.
+  function warmServiceWorker() {
+    if (!gesture || gesture.warmed) return;
+    gesture.warmed = true;
+    try {
+      Promise.resolve(chrome.runtime.sendMessage({ action: "wake" })).catch(() => {});
+    } catch (error) {
+      // A worker that cannot be reached now is retried by sendAction later.
+    }
   }
 
   function execute(action) {
@@ -187,12 +221,14 @@
     } else if (action === "scroll-bottom") {
       window.scrollTo(window.scrollX, document.documentElement.scrollHeight);
     } else {
-      chrome.runtime.sendMessage({ action });
+      sendAction(action);
     }
   }
 
   function begin(event) {
-    if (event.button !== 2 || gesture) return;
+    if (event.button !== 2) return;
+    // Always start fresh: a gesture left behind by a release the page never
+    // delivered would otherwise block every later gesture.
     gesture = {
       startX: event.clientX,
       startY: event.clientY,
@@ -200,6 +236,7 @@
       anchorY: event.clientY,
       distance: 0,
       directions: [],
+      matchedAction: null,
       points: [[event.clientX, event.clientY]]
     };
   }
@@ -213,19 +250,23 @@
 
     if (gesture.distance >= START_THRESHOLD && !trail) {
       createTrail(gesture.startX, gesture.startY);
+      warmServiceWorker();
     }
     updateTrail(event.clientX, event.clientY);
 
-    const dx = event.clientX - gesture.anchorX;
-    const dy = event.clientY - gesture.anchorY;
-    if (Math.hypot(dx, dy) >= SEGMENT_THRESHOLD) {
-      addDirection(directionFor(dx, dy));
+    // Consume the pending movement only once it resolves to a direction.
+    // Advancing the anchor on a still-diagonal move discarded that movement,
+    // which made cornered gestures such as DR drop segments.
+    const direction = directionFor(event.clientX - gesture.anchorX, event.clientY - gesture.anchorY);
+    if (direction) {
+      addDirection(direction);
       gesture.anchorX = event.clientX;
       gesture.anchorY = event.clientY;
-    } else if (gesture.directions.length === 0 && gesture.distance < START_THRESHOLD) {
-      return;
     }
-    updateTrailLabel(event.clientX, event.clientY);
+
+    const matched = gestureMap[gesture.directions.join("")];
+    if (matched) gesture.matchedAction = matched;
+    updateTrailLabel();
   }
 
   function end(event) {
