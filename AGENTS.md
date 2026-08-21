@@ -39,7 +39,8 @@ Measure before changing anything; this path is unusually easy to misdiagnose. In
 
 Beware these traps, each of which has produced a confidently wrong diagnosis:
 
-- **Service-worker cold starts cost roughly 50–200ms, not seconds.** A multi-second delay is never explained by the worker being asleep, and a keepalive is not a fix for one. The worker's log includes its uptime; check it before assuming a restart happened.
+- **Service-worker cold starts cost roughly 50–200ms, not seconds.** A multi-second delay is not explained by the worker being asleep, and an always-on keepalive is not a fix for one. `warmServiceWorker` already wakes the worker as the trail appears, which is several hundred milliseconds before the release that runs the action.
+- **Reproduce a slowdown under controlled conditions before attributing it to code.** A long delay in tab actions was chased at length here and never reproduced once the browser had settled: it appeared only in the moments after a Chrome relaunch, when session restore saturates the machine, and it disappeared with the suspect changes stashed. Before changing anything, confirm the same page is slow with a warm browser and fast without your change; otherwise you are reading startup contention as a code defect.
 - **Timers are throttled in hidden tabs**, to once per second and to once per minute after a few minutes. A `setInterval` drift check therefore reports large fake stalls in any background tab, and content scripts run in every tab. Gate any such measurement on `document.hidden` being false at both ends of the window.
 - **The `chrome://extensions` Errors page aggregates every tab.** Use the specific page's console, or the service worker's console, to attribute a message to the context that produced it.
 - **Smooth scrolling does not prove an unblocked main thread.** Chrome scrolls on the compositor thread, so a page whose main thread is wedged still scrolls normally.
@@ -50,7 +51,7 @@ Remove all diagnostic logging before committing; released code should not log to
 
 No test framework or coverage threshold is configured. For changes, manually verify gesture recognition, each affected browser action, settings persistence, the trail/name display toggles, and options-page behavior after an extension reload. Confirm that permissions remain limited to the behavior documented in `README.md` and `PRIVACY.md`.
 
-Because a recognized gesture consumes `mouseup`, `auxclick`, and `contextmenu` before the page sees them, verify changes to that suppression against sites with their own right-click handling (for example, editors and file-manager UIs) as well as ordinary pages, and confirm that an unrecognized gesture still leaves the normal context menu intact. Check latency on a heavy, script-dense page and not only on a trivial one — overlay costs scale with page content, so a blank page hides them.
+Because a recognized gesture suppresses the `auxclick` and `contextmenu` that follow the release, verify changes to that suppression against sites with their own right-click handling (for example, editors and file-manager UIs) as well as ordinary pages, and confirm that an unrecognized gesture still leaves the normal context menu intact. The page still receives `mouseup` itself; suppressing that too was tried and reverted, since it risks breaking sites that track button state and fixed nothing measurable. Check latency on a heavy, script-dense page and not only on a trivial one — overlay costs scale with page content, so a blank page hides them.
 
 ## Commit & Pull Request Guidelines
 

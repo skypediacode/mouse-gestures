@@ -217,12 +217,10 @@
     if (delay !== undefined) setTimeout(() => sendAction(action, attempt + 1), delay);
   }
 
-  // Manifest V3 stops the worker after 30 idle seconds, and starting it again
-  // costs a fraction of a second. Waking it here -- as the trail appears, which
-  // is several hundred milliseconds before the release that runs the action --
-  // spends that startup on time the user is still drawing in. That makes an
-  // always-on keepalive unnecessary: the worker is already running by the time
-  // it is needed, and it stays stopped the rest of the time.
+  // Manifest V3 stops the worker after 30 idle seconds. Waking it here -- as
+  // the trail appears, several hundred milliseconds before the release that
+  // runs the action -- spends that startup on time the user is still drawing
+  // in, so no always-on keepalive is needed to hide it.
   function warmServiceWorker() {
     if (!gesture || gesture.warmed) return;
     gesture.warmed = true;
@@ -309,13 +307,6 @@
     gesture = null;
 
     if (action) {
-      // The page's own mouseup handlers are what wedge the main thread on
-      // script-heavy sites, and a queued extension message cannot leave the
-      // renderer until that thread is free. Claiming the event here means the
-      // page never runs them, so the action is not stuck behind them.
-      event.stopPropagation();
-      event.preventDefault();
-
       // contextmenu fires after mouseup in Chrome. This flag preserves ordinary clicks.
       suppressNextContextMenu = true;
       suppressNextAuxClick = true;
