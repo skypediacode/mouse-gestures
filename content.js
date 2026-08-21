@@ -6,30 +6,59 @@
   const SEGMENT_THRESHOLD = 18;
   const MIN_GESTURE_DISTANCE = 36;
   const MAX_GESTURE_SEGMENTS = 3;
+  // Compared against squared distances so the hot path never calls Math.hypot.
+  const START_THRESHOLD_SQUARED = START_THRESHOLD * START_THRESHOLD;
+  const MIN_GESTURE_DISTANCE_SQUARED = MIN_GESTURE_DISTANCE * MIN_GESTURE_DISTANCE;
+  // Points closer together than this add nothing visible to the trail.
+  const MIN_POINT_SPACING_SQUARED = 16;
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
   // GESTURE_ACTIONS, ACTION_LABELS, DEFAULT_GESTURES and toGestureMap come from
   // actions.js, loaded ahead of this file by the manifest.
   let displaySettings = { showTrail: true, showGestureName: true };
   let gestureMap = toGestureMap(DEFAULT_GESTURES);
-  chrome.storage.sync.get({ gestures: DEFAULT_GESTURES, showTrail: true, showGestureName: true }, (result) => {
-    displaySettings = { showTrail: result.showTrail, showGestureName: result.showGestureName };
-    gestureMap = toGestureMap(result.gestures);
-  });
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "sync") return;
-    if (changes.gestures) gestureMap = toGestureMap(changes.gestures.newValue);
-    if (changes.showTrail) {
-      displaySettings.showTrail = changes.showTrail.newValue;
-      if (trail) {
-        const display = displaySettings.showTrail ? "" : "none";
-        trail.line.style.display = display;
-        trail.shadow.style.display = display;
+
+  // This script runs in every frame, so settings are read lazily rather than at
+  // document_start: a page with many iframes would otherwise open one storage
+  // read and one onChanged subscription per frame before the user has touched
+  // any of them. The cursor has to enter a frame before a gesture can be drawn
+  // in it, so the first mouseover -- with mousedown as a backstop -- is early
+  // enough that the map is in place well before a release needs it.
+  let settingsRequested = false;
+
+  function loadSettings() {
+    if (settingsRequested) return;
+    settingsRequested = true;
+
+    chrome.storage.sync.get({ gestures: DEFAULT_GESTURES, showTrail: true, showGestureName: true }, (result) => {
+      displaySettings = { showTrail: result.showTrail, showGestureName: result.showGestureName };
+      gestureMap = toGestureMap(result.gestures);
+    });
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "sync") return;
+      if (changes.gestures) gestureMap = toGestureMap(changes.gestures.newValue);
+      if (changes.showTrail) {
+        displaySettings.showTrail = changes.showTrail.newValue;
+        if (trail) {
+          const display = displaySettings.showTrail ? "" : "none";
+          trail.line.style.display = display;
+          trail.shadow.style.display = display;
+        }
       }
-    }
-    if (changes.showGestureName) {
-      displaySettings.showGestureName = changes.showGestureName.newValue;
-      if (!displaySettings.showGestureName && trail) trail.label.style.display = "none";
-    }
-  });
+      if (changes.showGestureName) {
+        displaySettings.showGestureName = changes.showGestureName.newValue;
+        if (trail) {
+          // Clear the cached label so the write below is not skipped as a
+          // repeat; toggling the setting back on restores it mid-gesture.
+          trail.renderedName = undefined;
+          if (displaySettings.showGestureName) updateTrailLabel();
+          else trail.label.style.display = "none";
+        }
+      }
+    });
+  }
 
   let gesture = null;
   let suppressNextContextMenu = false;
@@ -40,27 +69,77 @@
   let trail = null;
   let trailRemovalTimer = null;
 
+  // Joined once at load. These are constant, so building them inside
+  // createTrail only allocated a throwaway array and string on the path that
+  // starts every gesture.
+  const OVERLAY_CSS = [
+    "position:fixed",
+    "inset:0",
+    "z-index:2147483647",
+    "pointer-events:none",
+    "overflow:hidden",
+    // Isolate the overlay's paints from the page so redrawing the trail
+    // never invalidates anything underneath it.
+    "contain:layout paint style"
+  ].join(";");
+
+  const LABEL_CSS = [
+    "position:fixed",
+    "display:none",
+    "left:50%",
+    "top:85vh",
+    "transform:translate(-50%, -50%)",
+    "box-sizing:border-box",
+    "width:120px",
+    "max-width:min(280px, calc(100vw - 32px))",
+    "min-height:90px",
+    "padding:14px 18px",
+    "align-items:center",
+    "justify-content:center",
+    "text-align:center",
+    "border-radius:20px",
+    "border:1px solid rgba(255, 255, 255, .18)",
+    // An opaque background replaces backdrop-filter: blurring the backdrop
+    // makes Chrome snapshot and blur the entire page behind the label, which
+    // is the single most expensive thing the overlay used to do.
+    "background:rgb(49, 65, 84)",
+    "color:#fff",
+    "font:600 18px/1.25 system-ui, sans-serif",
+    "white-space:normal",
+    "box-shadow:0 6px 18px rgba(24, 36, 52, .22)"
+  ].join(";");
+
+  // Appending to a polyline's live SVGPointList is constant-time. Rewriting the
+  // points attribute instead makes Chrome reparse the whole serialized list on
+  // every move, so a long trail pays for its own length again with each point.
+  // Probed once, with the attribute kept as a fallback.
+  let pointListSupport = null;
+
+  function pointListAvailable() {
+    if (pointListSupport === null) {
+      try {
+        const probe = document.createElementNS(SVG_NS, "polyline");
+        probe.points.appendItem(new DOMPoint(0, 0));
+        pointListSupport = probe.points.numberOfItems === 1;
+      } catch (error) {
+        pointListSupport = false;
+      }
+    }
+    return pointListSupport;
+  }
+
   function createTrail(x, y) {
     removeTrail();
 
     const overlay = document.createElement("div");
-    overlay.style.cssText = [
-      "position:fixed",
-      "inset:0",
-      "z-index:2147483647",
-      "pointer-events:none",
-      "overflow:hidden",
-      // Isolate the overlay's paints from the page so redrawing the trail
-      // never invalidates anything underneath it.
-      "contain:layout paint style"
-    ].join(";");
+    overlay.style.cssText = OVERLAY_CSS;
 
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("width", "100%");
     svg.setAttribute("height", "100%");
     svg.style.cssText = "display:block;width:100%;height:100%;";
 
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    const line = document.createElementNS(SVG_NS, "polyline");
     line.style.display = displaySettings.showTrail ? "" : "none";
     line.setAttribute("fill", "none");
     line.setAttribute("stroke", "#4285f4");
@@ -71,34 +150,9 @@
     // repaints the whole viewport on every mousemove, and the cost grows with
     // whatever the page is drawing underneath. A stroked twin underneath gives
     // the same lift for the price of one more polyline.
-    line.setAttribute("points", `${x},${y}`);
 
     const label = document.createElement("div");
-    label.style.cssText = [
-      "position:fixed",
-      "display:none",
-      "left:50%",
-      "top:85vh",
-      "transform:translate(-50%, -50%)",
-      "box-sizing:border-box",
-      "width:120px",
-      "max-width:min(280px, calc(100vw - 32px))",
-      "min-height:90px",
-      "padding:14px 18px",
-      "align-items:center",
-      "justify-content:center",
-      "text-align:center",
-      "border-radius:20px",
-      "border:1px solid rgba(255, 255, 255, .18)",
-      // An opaque background replaces backdrop-filter: blurring the backdrop
-      // makes Chrome snapshot and blur the entire page behind the label, which
-      // is the single most expensive thing the overlay used to do.
-      "background:rgb(49, 65, 84)",
-      "color:#fff",
-      "font:600 18px/1.25 system-ui, sans-serif",
-      "white-space:normal",
-      "box-shadow:0 6px 18px rgba(24, 36, 52, .22)"
-    ].join(";");
+    label.style.cssText = LABEL_CSS;
 
     // Drawn first, so it sits behind the trail and reads as its shadow.
     const shadow = line.cloneNode(false);
@@ -106,19 +160,48 @@
     shadow.setAttribute("stroke-width", "7");
     shadow.setAttribute("transform", "translate(0, 1)");
 
+    const usePointList = pointListAvailable();
+    if (usePointList) {
+      line.points.appendItem(new DOMPoint(x, y));
+      shadow.points.appendItem(new DOMPoint(x, y));
+    } else {
+      line.setAttribute("points", `${x},${y}`);
+      shadow.setAttribute("points", `${x},${y}`);
+    }
+
     svg.appendChild(shadow);
     svg.appendChild(line);
     overlay.appendChild(svg);
     overlay.appendChild(label);
     (document.documentElement || document.body).appendChild(overlay);
-    trail = { overlay, line, shadow, label, points: [[x, y]], pointsAttribute: `${x},${y}` };
+    trail = {
+      overlay,
+      line,
+      shadow,
+      label,
+      // Only the previous point is ever read, so the full point history is no
+      // longer retained: a long gesture used to accumulate hundreds of arrays.
+      lastX: x,
+      lastY: y,
+      usePointList,
+      pointsAttribute: usePointList ? "" : `${x},${y}`,
+      renderedName: null
+    };
   }
 
   function updateTrail(x, y) {
     if (!trail) return;
-    const previous = trail.points[trail.points.length - 1];
-    if (Math.hypot(x - previous[0], y - previous[1]) < 4) return;
-    trail.points.push([x, y]);
+    const dx = x - trail.lastX;
+    const dy = y - trail.lastY;
+    if (dx * dx + dy * dy < MIN_POINT_SPACING_SQUARED) return;
+    trail.lastX = x;
+    trail.lastY = y;
+
+    if (trail.usePointList) {
+      trail.line.points.appendItem(new DOMPoint(x, y));
+      trail.shadow.points.appendItem(new DOMPoint(x, y));
+      return;
+    }
     // Append to the serialized string rather than rebuilding it from every
     // point, which turned a long trail into quadratic work per mousemove.
     trail.pointsAttribute += ` ${x},${y}`;
@@ -130,6 +213,11 @@
     if (!trail || !displaySettings.showGestureName || !gesture) return;
 
     const name = ACTION_LABELS[gesture.matchedAction];
+    // The label can only change when the matched action does, so a repeat call
+    // must not write the same text and display back into the DOM.
+    if (name === trail.renderedName) return;
+    trail.renderedName = name;
+
     if (!name) {
       trail.label.style.display = "none";
       return;
@@ -174,16 +262,20 @@
       : (dy > 0 ? "D" : "U");
   }
 
+  // Reports whether the direction list actually changed, so the caller can skip
+  // rejoining and rematching the gesture on the moves that added nothing.
   function addDirection(direction) {
-    if (!direction || !gesture) return;
+    if (!direction || !gesture) return false;
     const last = gesture.directions[gesture.directions.length - 1];
     if (direction !== last && gesture.directions.length < MAX_GESTURE_SEGMENTS) {
       gesture.directions.push(direction);
+      return true;
     }
+    return false;
   }
 
   function recognizedGesture() {
-    if (!gesture || gesture.distance < MIN_GESTURE_DISTANCE) return null;
+    if (!gesture || gesture.distanceSquared < MIN_GESTURE_DISTANCE_SQUARED) return null;
     // A gesture must match in full. A matched prefix such as DR must not run
     // after the user continues drawing and turns it into an unmapped gesture.
     return gestureMap[gesture.directions.join("")] || null;
@@ -253,6 +345,8 @@
   }
 
   function begin(event) {
+    // Backstop for a frame that is pressed without a preceding hover.
+    loadSettings();
     if (event.button !== 2) return;
     // Always start fresh: a gesture left behind by a release the page never
     // delivered would otherwise block every later gesture.
@@ -261,11 +355,14 @@
       startY: event.clientY,
       anchorX: event.clientX,
       anchorY: event.clientY,
-      distance: 0,
+      distanceSquared: 0,
       directions: [],
-      matchedAction: null,
-      points: [[event.clientX, event.clientY]]
+      matchedAction: null
     };
+    // mousemove is bound only while the right button is actually down. Kept
+    // bound all the time, it made every pointer movement on every page -- in
+    // every frame of every tab -- dispatch into this script for nothing.
+    window.addEventListener("mousemove", move, true);
   }
 
   function move(event, isRelease = false) {
@@ -273,11 +370,14 @@
 
     const fromStartX = event.clientX - gesture.startX;
     const fromStartY = event.clientY - gesture.startY;
-    gesture.distance = Math.hypot(fromStartX, fromStartY);
+    gesture.distanceSquared = fromStartX * fromStartX + fromStartY * fromStartY;
 
-    if (gesture.distance >= START_THRESHOLD && !trail) {
+    if (gesture.distanceSquared >= START_THRESHOLD_SQUARED && !trail) {
       createTrail(gesture.startX, gesture.startY);
       warmServiceWorker();
+      // A trail that appears after a direction was already matched still shows
+      // its label; the cached-name check keeps this from writing twice.
+      updateTrailLabel();
     }
     updateTrail(event.clientX, event.clientY);
 
@@ -286,18 +386,24 @@
     // which made cornered gestures such as DR drop segments.
     const direction = directionFor(event.clientX - gesture.anchorX, event.clientY - gesture.anchorY);
     if (direction) {
-      addDirection(direction);
+      const changed = addDirection(direction);
       gesture.anchorX = event.clientX;
       gesture.anchorY = event.clientY;
+      // The match can only change when the direction list does, so the join,
+      // the lookup and the label write stay off the per-move path.
+      if (changed) {
+        gesture.matchedAction = gestureMap[gesture.directions.join("")] || null;
+        updateTrailLabel();
+      }
     }
-
-    const matched = gestureMap[gesture.directions.join("")];
-    gesture.matchedAction = matched || null;
-    updateTrailLabel();
   }
 
   function end(event) {
+    // Only the right button ends the gesture. Unbinding before this check let
+    // an unrelated release -- a left click while the right button is still
+    // held -- stop tracking for the rest of the gesture.
     if (!gesture || event.button !== 2) return;
+    window.removeEventListener("mousemove", move, true);
 
     // MouseEvent.buttons is 0 during mouseup, so explicitly process the
     // release position; otherwise a short final movement can be missed.
@@ -319,8 +425,9 @@
   }
 
   window.addEventListener("mousedown", begin, true);
-  window.addEventListener("mousemove", move, true);
   window.addEventListener("mouseup", end, true);
+  // Reads settings as the cursor first enters this frame, then unbinds itself.
+  window.addEventListener("mouseover", loadSettings, { capture: true, once: true, passive: true });
 
   window.addEventListener("auxclick", (event) => {
     if (suppressNextAuxClick) {
@@ -340,6 +447,7 @@
 
   // If the mouse is released outside the page, discard the partial gesture.
   window.addEventListener("blur", () => {
+    window.removeEventListener("mousemove", move, true);
     gesture = null;
     removeTrail();
   });

@@ -7,7 +7,7 @@ This repository is a dependency-free Chrome Manifest V3 extension. Runtime code 
 - `manifest.json` defines permissions, the service worker, options page, and content-script entry points.
 - `actions.js` is the single source of truth for the action list, their display labels, and the default gesture map. It is loaded ahead of both `content.js` and `options.js`, so a new action is declared once and appears in the trail overlay and the settings dropdown together. Do not reintroduce a second copy of this list.
 - `background.js` handles browser-level tab actions. Anything the page can do for itself (history navigation, scrolling) is handled in `content.js` instead and never reaches the worker.
-- `content.js` captures gestures and renders the pointer-transparent trail overlay. It runs in subframes as well as the top frame, so keep its per-frame startup cost small.
+- `content.js` captures gestures and renders the pointer-transparent trail overlay. It runs in subframes as well as the top frame, so keep its per-frame startup cost small. Settings are therefore read lazily: the `chrome.storage.sync.get` and the `onChanged` subscription happen on the frame's first `mouseover` (with `mousedown` as a backstop), not at `document_start`, so a page full of iframes does not open one read and one subscription per frame before the user has touched any of them. Do not move that read back to load time.
 - `options.html`, `options.css`, and `options.js` implement the editable gesture settings UI.
 - `icons/` contains the editable SVG source and the PNG manifest icons; `screenshots/` contains store artwork.
 - `PRIVACY.md` documents data and permissions.
@@ -31,7 +31,11 @@ Everything on the gesture path — event handling, trail drawing, and the `chrom
 
 The trail overlay spans the whole viewport, so any property that makes Chrome repaint through it is paid against the entire page, and the cost grows with how much the page draws underneath. Do not reintroduce `backdrop-filter` (it forces Chrome to snapshot and blur everything behind the element), `filter` on the viewport-sized SVG, or any effect that samples the page behind the overlay. Prefer opaque backgrounds, `box-shadow`, and a second stroked polyline over filters, and keep `contain` on the overlay so its paints cannot invalidate the page.
 
-`updateTrail` runs on every `mousemove`. Keep it incremental — append to the serialized `points` string rather than rebuilding it from the full array, and do not add per-move work whose cost scales with trail length.
+`updateTrail` runs on every `mousemove`. Keep it incremental, and do not add per-move work whose cost scales with trail length. Points are appended to each polyline's live `SVGPointList` (`line.points.appendItem`), which is constant-time; writing the serialized `points` attribute instead makes Chrome reparse the entire list on every move, so a long trail pays for its own length again with each point. A feature-detected fallback keeps the attribute path for engines without the list API — leave it in place rather than assuming the API.
+
+`mousemove` is bound only while the right button is down, and unbound on release and on `blur`. Do not move it back to a permanent listener: this script runs in every frame of every tab, so a bound handler makes all ordinary pointer movement dispatch into it for nothing. Unbind only on a genuine end of the gesture — an early `removeEventListener` in `end`, before the `event.button !== 2` guard, stops tracking when an unrelated button is released mid-gesture and visibly freezes the trail.
+
+The trail label and the matched action only change when the direction list changes, so both are recomputed there rather than on every move, and `updateTrailLabel` skips writing a name it has already rendered. Keep that guard when touching the label.
 
 ## Diagnosing Slow Actions
 
