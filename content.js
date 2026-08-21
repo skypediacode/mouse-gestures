@@ -17,6 +17,12 @@
   });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "sync") return;
+    if (changes.gestures) {
+      gestureMap = {};
+      (changes.gestures.newValue || []).forEach(({ gesture, action }) => {
+        if (gesture && action && action !== "screenshot") gestureMap[gesture] = action;
+      });
+    }
     if (changes.showTrail) {
       displaySettings.showTrail = changes.showTrail.newValue;
       if (trail) trail.line.style.display = displaySettings.showTrail ? "" : "none";
@@ -164,11 +170,19 @@
   }
 
   function execute(action) {
-    if (action === "scroll-up") window.scrollBy({ top: -Math.round(window.innerHeight * .8), behavior: "smooth" });
-    else if (action === "scroll-down") window.scrollBy({ top: Math.round(window.innerHeight * .8), behavior: "smooth" });
-    else if (action === "scroll-left") window.scrollBy({ left: -Math.round(window.innerWidth * .8), behavior: "smooth" });
-    else if (action === "scroll-right") window.scrollBy({ left: Math.round(window.innerWidth * .8), behavior: "smooth" });
-    else if (action === "scroll-top") {
+    if (action === "back") {
+      window.history.back();
+    } else if (action === "forward") {
+      window.history.forward();
+    } else if (action === "scroll-up") {
+      window.scrollBy({ top: -Math.round(window.innerHeight * .8), behavior: "smooth" });
+    } else if (action === "scroll-down") {
+      window.scrollBy({ top: Math.round(window.innerHeight * .8), behavior: "smooth" });
+    } else if (action === "scroll-left") {
+      window.scrollBy({ left: -Math.round(window.innerWidth * .8), behavior: "smooth" });
+    } else if (action === "scroll-right") {
+      window.scrollBy({ left: Math.round(window.innerWidth * .8), behavior: "smooth" });
+    } else if (action === "scroll-top") {
       window.scrollTo(window.scrollX, 0);
     } else if (action === "scroll-bottom") {
       window.scrollTo(window.scrollX, document.documentElement.scrollHeight);
@@ -190,8 +204,8 @@
     };
   }
 
-  function move(event) {
-    if (!gesture || !(event.buttons & 2)) return;
+  function move(event, isRelease = false) {
+    if (!gesture || (!isRelease && !(event.buttons & 2))) return;
 
     const fromStartX = event.clientX - gesture.startX;
     const fromStartY = event.clientY - gesture.startY;
@@ -217,7 +231,9 @@
   function end(event) {
     if (!gesture || event.button !== 2) return;
 
-    move(event);
+    // MouseEvent.buttons is 0 during mouseup, so explicitly process the
+    // release position; otherwise a short final movement can be missed.
+    move(event, true);
     const action = recognizedGesture();
     gesture = null;
 

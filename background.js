@@ -11,12 +11,12 @@ chrome.runtime.onMessage.addListener((message, sender) => {
   }
 
   if (message.action === "back" && sender.tab?.id !== undefined) {
-    chrome.tabs.goBack(sender.tab.id);
+    chrome.tabs.goBack(sender.tab.id).catch(() => {});
     return;
   }
 
   if (message.action === "forward" && sender.tab?.id !== undefined) {
-    chrome.tabs.goForward(sender.tab.id);
+    chrome.tabs.goForward(sender.tab.id).catch(() => {});
     return;
   }
 
