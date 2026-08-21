@@ -26,15 +26,15 @@ The extension operates 100% locally on your device without communicating with an
 
 ## 3. Permissions Used and Why
 
-To function properly, the extension requires the following Chrome permissions:
+To function properly, the extension requests the absolute minimum necessary Chrome permissions:
 
 | Permission | Purpose |
 | :--- | :--- |
 | **`sessions`** | Required solely to reopen the most recently closed tab when you perform the "Reopen closed tab" gesture. |
 | **`storage`** | Used exclusively to save and synchronize your custom gesture preferences and UI display options locally via `chrome.storage.sync`. |
-| **`host_permissions (<all_urls>)`** | Required to inject the lightweight gesture-listener script across web pages so gestures can be drawn and executed seamlessly. |
+| **Content Script Matches (`http://*/*`, `https://*/*`)** | Scoped strictly to standard HTTP and HTTPS web pages to attach gesture event listeners. No broad `host_permissions` are requested or used. |
 
-None of these permissions are used to extract, inspect, or transfer any user data.
+The extension does not request or use any `host_permissions`, nor does it extract, inspect, or transfer any user or browsing data.
 
 ---
 

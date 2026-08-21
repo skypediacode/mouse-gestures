@@ -24,4 +24,4 @@ After changing files, click the extension's reload button on the extensions page
 
 Chrome does not automatically apply edits to a loaded unpacked extension. After reloading the extension, refresh any already-open web pages so the updated content script is installed there. New pages will use the updated version automatically.
 
-The extension uses the `sessions` permission for reopening a closed tab and `<all_urls>` to install the content script on ordinary web pages. Chrome-internal pages and the Chrome Web Store do not allow content scripts.
+The extension uses the `sessions` permission for reopening a closed tab, `storage` for synchronizing preferences, and content script matching (`http://*/*`, `https://*/*`) to install the gesture detector on standard web pages without requesting any broad `host_permissions`. Chrome-internal pages and the Chrome Web Store do not allow content scripts.
