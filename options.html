@@ -1,4 +1,122 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mouse Gestures — Settings</title><link rel="stylesheet" href="options.css"></head>
-<body><main class="shell"><header><div class="brand"><img src="icons/icon48.png" alt=""><span>Mouse Gestures</span></div><span class="version">v1.0.0</span></header><section class="hero"><div><p class="eyebrow">OPEN SOURCE. NO TRACKING.</p><h1>Gesture settings</h1><p class="lede">Hold the right mouse button, draw a shape, then release. Make your favorite browser actions feel instant.</p></div><div class="demo" aria-hidden="true"><span>↓</span><small>right-click + draw</small></div></section><div class="layout"><section class="card gestures"><div class="heading"><div><h2>Your gestures</h2><p>Change a gesture or add an action below. Changes save automatically</p></div><b id="saved" role="status" aria-live="polite">Saved</b></div><div id="list"></div><button id="add" class="add" type="button">＋ Add gesture</button></section><aside><section class="card display"><h2>Display</h2><p>Choose what appears while drawing.</p><label class="setting"><span><strong>Show trailing line</strong><small>Display the path of your gesture.</small></span><input id="showTrail" type="checkbox"></label><label class="setting"><span><strong>Show gesture name</strong><small>Display the assigned action name.</small></span><input id="showGestureName" type="checkbox"></label></section><section class="card tips"><h2>How to use</h2><p><b>01</b> Press and hold the right mouse button.</p><p><b>02</b> Move in a direction. Diagonals work too.</p><p><b>03</b> Release to run the assigned action.</p></section><section class="card quick"><h2>Quick start</h2><p>Start with a popular setup.</p><button class="preset" data-preset="default" type="button"><i>✦</i><span><strong>Balanced (Default)</strong><small>Back, forward, tabs &amp; scrolling</small></span>›</button><button class="preset" data-preset="navigation" type="button"><i>↔</i><span><strong>Navigation focus</strong><small>Fast browsing essentials</small></span>›</button><button class="preset" data-preset="tabs" type="button"><i>⊞</i><span><strong>Tab management</strong><small>New, close &amp; reopen tabs</small></span>›</button></section></aside></div></main><template id="row"><div class="row"><div class="dirs"><button data-dir="U">↑</button><button data-dir="D">↓</button><button data-dir="L">←</button><button data-dir="R">→</button></div><strong class="code"></strong><span class="arrow">→</span><select></select><button class="remove" aria-label="Remove gesture">×</button></div></template><script src="actions.js"></script><script src="options.js"></script></body></html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mouse Gestures — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div class="brand">
+          <img src="icons/icon48.png" alt="" /><span>Mouse Gestures</span>
+        </div>
+        <span class="version">v1.0.0</span>
+      </header>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">NO TRACKING. OPEN SOURCE. </p>
+          <h1>Gesture settings</h1>
+          <p class="lede">
+            Make everyday browsing feel effortless with shortcuts that follow
+            the way you move.
+          </p>
+        </div>
+        <section id="ratingCard" class="card rating-card" aria-labelledby="ratingTitle">
+          <div class="rating-icon" aria-hidden="true"><span>☆</span></div>
+          <div class="rating-copy">
+            <h2 id="ratingTitle">Enjoying Mouse Gestures?</h2>
+            <p>Help others find Mouse Gestures.</p>
+          </div>
+          <a id="rateLink" class="rate-link" target="_blank" rel="noopener noreferrer">Rate on Chrome Web Store <span aria-hidden="true">↗</span></a>
+        </section>
+      </section>
+      <div class="layout">
+        <section class="card gestures">
+          <div class="heading">
+            <div>
+              <h2>Your gestures</h2>
+              <p>
+                Change a gesture or add an action below. Changes save
+                automatically
+              </p>
+            </div>
+            <b id="saved" role="status" aria-live="polite">Saved</b>
+          </div>
+          <div id="list"></div>
+          <button id="add" class="add" type="button">＋ Add gesture</button>
+        </section>
+        <aside>
+          <section class="card display">
+            <h2>Display</h2>
+            <p>Choose what appears while drawing.</p>
+            <label class="setting"
+              ><span
+                ><strong>Show trailing line</strong
+                ><small>Display the path of your gesture.</small></span
+              ><input id="showTrail" type="checkbox" /></label
+            ><label class="setting"
+              ><span
+                ><strong>Show gesture name</strong
+                ><small>Display the assigned action name.</small></span
+              ><input id="showGestureName" type="checkbox"
+            /></label>
+          </section>
+          <section class="card tips">
+            <h2>How to use</h2>
+            <p><b>01</b> Press and hold the right mouse button.</p>
+            <p><b>02</b> Move the mouse then release for the action.</p>
+          </section>
+          <section class="card quick">
+            <h2>Quick start</h2>
+            <p>Start with a popular setup.</p>
+            <button class="preset" data-preset="default" type="button">
+              <i>✦</i
+              ><span
+                ><strong>Balanced (Default)</strong
+                ><small>Back, forward, tabs &amp; scrolling</small></span
+              >›</button
+            ><button class="preset" data-preset="navigation" type="button">
+              <i>↔</i
+              ><span
+                ><strong>Navigation focus</strong
+                ><small>Fast browsing essentials</small></span
+              >›</button
+          </section>
+        </aside>
+      </div>
+      <footer class="site-footer">
+        <div class="footer-about">
+          <div>
+            <strong>Open source</strong>
+            <p>Built with <span aria-hidden="true">❤️</span> by <a href="https://github.com/skypediacode" target="_blank" rel="noopener noreferrer">skypediacode</a>.</p>
+          </div>
+        </div>
+        <nav class="footer-links" aria-label="Project links">
+          <a href="https://github.com/skypediacode/mouse-gestures" target="_blank" rel="noopener noreferrer">View source on GitHub ↗</a>
+          <a href="https://github.com/skypediacode/mouse-gestures/issues" target="_blank" rel="noopener noreferrer">Report an issue ↗</a>
+        </nav>
+      </footer>
+    </main>
+    <template id="row"
+      ><div class="row">
+        <div class="dirs">
+          <button data-dir="U"><span>↑</span></button
+          ><button data-dir="D"><span>↓</span></button
+          ><button data-dir="L"><span>←</span></button
+          ><button data-dir="R"><span>→</span></button>
+        </div>
+        <strong class="code"></strong><span class="arrow">→</span
+        ><div class="action-select">
+          <button class="action-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+            <span class="action-value"></span><span class="action-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="action-menu" role="listbox" hidden></div>
+        </div><button class="remove" aria-label="Remove gesture">×</button>
+      </div></template
+    >
+    <script src="actions.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

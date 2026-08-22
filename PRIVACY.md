@@ -3,7 +3,7 @@
 **Effective Date:** August 20, 2026  
 **Last Updated:** August 21, 2026  
 
-This Privacy Policy applies to the **Mouse Gestures – Open Source & No-tracking** browser extension for Google Chrome.
+This Privacy Policy applies to the **Mouse Gestures – No Tracking & Open Source** browser extension for Google Chrome.
 
 ---
 
