@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mouse Gestures — Promo Tile</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      width: 1280px;
+      height: 800px;
+      background: #060b13;
+      background: radial-gradient(ellipse 80% 70% at 50% 34%, #0f2b4e 0%, #081729 46%, #050a12 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #ffffff;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 15px;
+    }
+    .icon-wrapper {
+      width: 220px;
+      height: 220px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 9px 33px rgba(13, 153, 255, 0.25));
+    }
+    .icon-wrapper svg {
+      width: 100%;
+      height: 100%;
+    }
+    .title {
+      font-size: 94px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      line-height: 1.05;
+      margin-bottom: 18px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+    .subtitle {
+      font-size: 42px;
+      font-weight: 800;
+      color: #0D99FF;
+      letter-spacing: 2.5px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 42px;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .bullet {
+      font-size: 32px;
+      color: #0D99FF;
+      line-height: 1;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      padding: 24px 68px;
+      background: rgba(14, 33, 58, 0.85);
+      border: 3px solid rgba(45, 105, 175, 0.8);
+      border-radius: 9999px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+      line-height: 1;
+    }
+    .pill span {
+      font-size: 50px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1;
+      display: inline-block;
+      transform: translateY(-1px);
+    }
+    .pill-bullet {
+      font-size: 38px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1;
+      display: inline-block;
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <!-- App Logo Icon -->
+    <div class="icon-wrapper">
+      <svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M43.99 17.8416C44.3343 16.9531 44.897 16.1847 45.6091 15.6304L85.2118 83.7128L64.9886 119.023C62.7888 122.878 57.7002 121.894 57.0961 117.497L43.6706 20.6327C43.5347 19.7 43.6457 18.73 43.99 17.8416Z" fill="#CBCBCB"/>
+        <path d="M47.5639 15.082C46.7163 15.1139 45.8837 15.4228 45.168 15.9711L85.3181 83.6308L121.461 75.417C125.404 74.5286 126.521 68.7529 123.194 66.4587L49.9401 15.7916C49.2372 15.2967 48.4115 15.0501 47.5639 15.082Z" fill="url(#paint0_linear_752_45)"/>
+        <path d="M8.08502 85.1137C17.3777 82.0645 38.5495 69.8979 28.7899 63.8659C19.0303 57.8339 3.08471 45.1011 44.0793 20.4" stroke="#FF8E0D" stroke-width="6.46653" stroke-linecap="square"/>
+        <defs>
+          <linearGradient id="paint0_linear_752_45" x1="47.7987" y1="17.5966" x2="113.202" y2="71.2841" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#0D99FF"/>
+            <stop offset="1" stop-color="#6B5DF1"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+
+    <!-- Title -->
+    <div class="title">Mouse Gestures</div>
+
+    <!-- Subtitle -->
+    <div class="subtitle">
+      <span>OPEN SOURCE</span>
+      <span class="bullet">•</span>
+      <span>NO TRACKING</span>
+    </div>
+
+    <!-- Features Pill Badge -->
+    <div class="pill">
+      <span>100% Private</span>
+      <span class="pill-bullet">•</span>
+      <span>Just Works</span>
+    </div>
+  </div>
+</body>
+</html>
