@@ -1,5 +1,7 @@
 # Mouse Gestures – No Tracking & Open Source
 
+🌐 **Live Website & Interactive Demo:** [https://skypediacode.github.io/mouse-gestures/](https://skypediacode.github.io/mouse-gestures/)
+
 Small Manifest V3 Chrome extension for right-button mouse gestures. Hold the right mouse button, draw, and release. The defaults are:
 
 - Down, then right: close the current tab

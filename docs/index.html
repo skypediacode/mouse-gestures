@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mouse Gestures – No Tracking & Open Source</title>
+  <meta name="description" content="Simple, fast, no-tracking right-click mouse gestures for Google Chrome.">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav">
+      <a href="index.html" class="brand">
+        <img src="icons/icon48.png" alt="Logo">
+        <span>Mouse Gestures</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="https://github.com/skypediacode/mouse-gestures" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="badge">100% Free & Open Source • Zero Tracking</div>
+      <h1>Mouse Gestures for Chrome</h1>
+      <p>Fast, lightweight right-click gestures for tab management, navigation, and scrolling. Zero tracking. Just works.</p>
+      
+      <div class="hero-actions">
+        <a href="https://chromewebstore.google.com/detail/dgbdenjbggcneeckccphhadpldndjgbl" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/Google_Chrome_icon_%28February_2022%29.svg" alt="Google Chrome Logo" width="18" height="18">
+          Add to Chrome
+        </a>
+        <a href="https://github.com/skypediacode/mouse-gestures" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+    </section>
+
+    <!-- Interactive Demo -->
+    <div class="demo-card">
+      <div class="demo-header">
+        <span>Interactive Demo</span>
+        <span>Hold Right Click (or Drag) to draw</span>
+      </div>
+      <div class="demo-canvas-wrapper" id="demoWrapper">
+        <canvas id="gestureCanvas"></canvas>
+        <div class="demo-hint" id="demoHint">Draw ↓→ (Close tab) or ← (Back)</div>
+        <div class="demo-status" id="demoStatus">Action: Ready</div>
+      </div>
+    </div>
+
+    <!-- Default Gestures -->
+    <section id="gestures" class="section">
+      <h2>Default Gestures</h2>
+      <div class="gestures-grid">
+        <div class="gesture-item">
+          <div class="gesture-icon">↓→</div>
+          <div>
+            <div class="gesture-title">Close Tab</div>
+            <div class="gesture-stroke">Down, Right</div>
+          </div>
+        </div>
+        <div class="gesture-item">
+          <div class="gesture-icon">←↑</div>
+          <div>
+            <div class="gesture-title">Reopen Tab</div>
+            <div class="gesture-stroke">Left, Up</div>
+          </div>
+        </div>
+        <div class="gesture-item">
+          <div class="gesture-icon">←</div>
+          <div>
+            <div class="gesture-title">Go Back</div>
+            <div class="gesture-stroke">Left</div>
+          </div>
+        </div>
+        <div class="gesture-item">
+          <div class="gesture-icon">→</div>
+          <div>
+            <div class="gesture-title">Go Forward</div>
+            <div class="gesture-stroke">Right</div>
+          </div>
+        </div>
+        <div class="gesture-item">
+          <div class="gesture-icon">↑</div>
+          <div>
+            <div class="gesture-title">Scroll to Top</div>
+            <div class="gesture-stroke">Up</div>
+          </div>
+        </div>
+        <div class="gesture-item">
+          <div class="gesture-icon">↓</div>
+          <div>
+            <div class="gesture-title">Scroll to Bottom</div>
+            <div class="gesture-stroke">Down</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Highlights -->
+    <section class="section">
+      <div class="grid-3">
+        <div class="card">
+          <h3>🛡️ Zero Tracking</h3>
+          <p>Runs 100% locally on your machine. No telemetry, no analytics, no external servers.</p>
+        </div>
+        <div class="card">
+          <h3>⚙️ Fully Customizable</h3>
+          <p>Remap any stroke combination (<kbd>L</kbd>, <kbd>R</kbd>, <kbd>U</kbd>, <kbd>D</kbd>) to 15+ browser actions.</p>
+        </div>
+        <div class="card">
+          <h3>⚡ Manifest V3</h3>
+          <p>Ultra-low latency rendering. Subtle visual stroke trail without slowing down pages.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-content">
+      <div>© 2026 Mouse Gestures • MIT License</div>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="https://github.com/skypediacode/mouse-gestures" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      const wrapper = document.getElementById('demoWrapper');
+      const canvas = document.getElementById('gestureCanvas');
+      const ctx = canvas.getContext('2d');
+      const hint = document.getElementById('demoHint');
+      const status = document.getElementById('demoStatus');
+
+      const actions = {
+        "L": "Go back",
+        "R": "Go forward",
+        "U": "Scroll to top",
+        "D": "Scroll to bottom",
+        "DR": "Close tab",
+        "LU": "Reopen tab"
+      };
+
+      let drawing = false;
+      let points = [];
+      let dirs = [];
+      let lastPoint = null;
+
+      function resize() {
+        canvas.width = wrapper.clientWidth;
+        canvas.height = wrapper.clientHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      }
+
+      function start(e) {
+        if (e.button !== undefined && e.button !== 0 && e.button !== 2) return;
+        drawing = true;
+        points = [];
+        dirs = [];
+        hint.style.opacity = '0.2';
+        lastPoint = getPos(e);
+        points.push(lastPoint);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function move(e) {
+        if (!drawing) return;
+        const pt = getPos(e);
+        const dx = pt.x - lastPoint.x;
+        const dy = pt.y - lastPoint.y;
+
+        if (Math.hypot(dx, dy) >= 15) {
+          const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'R' : 'L') : (dy > 0 ? 'D' : 'U');
+          if (dirs[dirs.length - 1] !== dir) {
+            dirs.push(dir);
+            const seq = dirs.join('');
+            status.textContent = actions[seq] ? `Action: ${actions[seq]}` : `Stroke: ${seq}`;
+            status.classList.add('active');
+          }
+          lastPoint = pt;
+          points.push(pt);
+
+          // Draw line
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.strokeStyle = '#2563eb';
+          ctx.lineWidth = 4;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+          ctx.stroke();
+        }
+      }
+
+      function end() {
+        if (!drawing) return;
+        drawing = false;
+        const seq = dirs.join('');
+        if (actions[seq]) {
+          status.textContent = `✓ ${actions[seq]}`;
+        }
+        setTimeout(() => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          hint.style.opacity = '1';
+          status.classList.remove('active');
+        }, 1000);
+      }
+
+      wrapper.addEventListener('mousedown', (e) => { if (e.button === 2) e.preventDefault(); start(e); });
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', end);
+      wrapper.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      wrapper.addEventListener('touchstart', (e) => { e.preventDefault(); start(e); }, { passive: false });
+      window.addEventListener('touchmove', (e) => { if (drawing) move(e); }, { passive: false });
+      window.addEventListener('touchend', end);
+    })();
+  </script>
+</body>
+</html>
