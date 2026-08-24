@@ -4,11 +4,12 @@
 
 This repository is a dependency-free Chrome Manifest V3 extension. Runtime code is kept at the repository root:
 
-- `manifest.json` defines permissions, the service worker, options page, and content-script entry points.
-- `actions.js` is the single source of truth for the action list, their display labels, and the default gesture map. It is loaded ahead of both `content.js` and `options.js`, so a new action is declared once and appears in the trail overlay and the settings dropdown together. Do not reintroduce a second copy of this list.
+- `manifest.json` defines permissions, the service worker, options page, popup, and content-script entry points.
+- `actions.js` is the single source of truth for the action list, their display labels, and the default gesture map. It is loaded ahead of `content.js`, `options.js`, and `popup.js`, so a new action is declared once and appears in the trail overlay, settings dropdown, and popup together. Do not reintroduce a second copy of this list.
 - `background.js` handles browser-level tab actions. Anything the page can do for itself (history navigation, scrolling) is handled in `content.js` instead and never reaches the worker.
 - `content.js` captures gestures and renders the pointer-transparent trail overlay. It runs in subframes as well as the top frame, so keep its per-frame startup cost small. Settings are therefore read lazily: the `chrome.storage.sync.get` and the `onChanged` subscription happen on the frame's first `mouseover` (with `mousedown` as a backstop), not at `document_start`, so a page full of iframes does not open one read and one subscription per frame before the user has touched any of them. Do not move that read back to load time.
 - `options.html`, `options.css`, and `options.js` implement the editable gesture settings UI.
+- `popup.html`, `popup.css`, and `popup.js` implement the quick toolbar popup UI.
 - `icons/` contains the editable SVG source and the PNG manifest icons; `screenshots/` contains store artwork.
 - `PRIVACY.md` documents data and permissions.
 

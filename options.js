@@ -152,3 +152,17 @@ chrome.storage.sync.get(
     if (settings.length !== stored.length) persist();
   },
 );
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "sync") return;
+  if (changes.showTrail && showTrail.checked !== changes.showTrail.newValue) {
+    showTrail.checked = changes.showTrail.newValue;
+  }
+  if (changes.showGestureName && showGestureName.checked !== changes.showGestureName.newValue) {
+    showGestureName.checked = changes.showGestureName.newValue;
+  }
+  if (changes.gestures) {
+    const stored = changes.gestures.newValue || DEFAULT_GESTURES;
+    settings = stored.filter(isUsableGesture).map((x) => ({ ...x }));
+    render();
+  }
+});

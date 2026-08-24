@@ -87,7 +87,7 @@
     "position:fixed",
     "display:none",
     "left:50%",
-    "top:85vh",
+    "top:65vh",
     "transform:translate(-50%, -50%)",
     "box-sizing:border-box",
     "width:120px",
