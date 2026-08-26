@@ -38,6 +38,10 @@ The trail overlay spans the whole viewport, so any property that makes Chrome re
 
 The trail label and the matched action only change when the direction list changes, so both are recomputed there rather than on every move, and `updateTrailLabel` skips writing a name it has already rendered. Keep that guard when touching the label.
 
+Browser-level actions are acknowledged only after their `chrome.tabs` or `chrome.sessions` promise settles. Keep the message listener's channel open with `return true`, preserve the rejected response path, and do not replace these awaited calls with fire-and-forget dispatches: the content script uses the acknowledgement to distinguish a completed action from a dropped message.
+
+Only a gesture that reaches the minimum drawn distance should suppress the following `contextmenu` and `auxclick`. This includes gestures with no mapped action; a short right-click must remain available to the page. Test both cases when changing gesture recognition or event suppression.
+
 ## Diagnosing Slow Actions
 
 Measure before changing anything; this path is unusually easy to misdiagnose. Instrument both halves separately — the time a message spends in transit to the worker, and the time the `chrome.tabs` call itself takes — because they point at completely different causes and only one number is usually the culprit.
