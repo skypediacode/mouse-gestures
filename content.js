@@ -409,12 +409,17 @@
     // release position; otherwise a short final movement can be missed.
     move(event, true);
     const action = recognizedGesture();
+    const isGesture = gesture.distanceSquared >= MIN_GESTURE_DISTANCE_SQUARED;
     gesture = null;
 
-    if (action) {
-      // contextmenu fires after mouseup in Chrome. This flag preserves ordinary clicks.
+    // A drawn gesture is always consumed, even when no action is mapped to it.
+    // A short right-click remains available to the page's normal context menu.
+    if (isGesture) {
       suppressNextContextMenu = true;
       suppressNextAuxClick = true;
+    }
+
+    if (action) {
       // Dispatch before touching the DOM: removeTrail's style writes can force
       // layout, and any work done first is delay added to the action.
       execute(action);
