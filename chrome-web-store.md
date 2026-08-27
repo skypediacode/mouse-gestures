@@ -5,6 +5,10 @@ This document contains optimized metadata and listing copy ready to be filled in
 ---
 ## 1. What's New
 
+v1.0.3
+- Quick Rate Shortcut: Added a direct Chrome Web Store rating and review button to the toolbar popup header.
+- Cleaner Popup Header: Streamlined header layout for a more spacious and polished quick toolbar UI.
+
 v1.0.2
 - More reliable tab actions with completion-aware gesture handling.
 - Unmapped gestures are consumed without interfering with normal short right-clicks.

@@ -5,6 +5,16 @@ All notable changes to the **Mouse Gestures** extension will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-08-27
+
+### Added
+- **Store Rating Shortcut**: Direct rating and review button added to the toolbar popup header for quick access to the Chrome Web Store review page.
+
+### Changed
+- **Streamlined Toolbar Popup**: Polished the popup header layout by removing the redundant version label for a cleaner, more spacious design.
+
+---
+
 ## [1.0.2] - 2026-08-26
 
 ### Changed

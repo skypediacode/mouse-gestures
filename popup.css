@@ -55,13 +55,30 @@ body {
   letter-spacing: -0.01em;
 }
 
-.version {
-  font-size: 11px;
+.rate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
   font-weight: 600;
-  color: #8a93a3;
-  background: #edf1f7;
-  padding: 2px 6px;
+  color: #6e7786;
+  background: #f4f6fa;
+  border: 1px solid #e7ecf3;
   border-radius: 6px;
+  text-decoration: none;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.rate-btn:hover {
+  background: #fff8e6;
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+.rate-btn:hover svg {
+  fill: #f59e0b;
+  color: #f59e0b;
 }
 
 .toggles-section {

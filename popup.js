@@ -5,10 +5,6 @@ const showGestureName = document.querySelector("#showGestureName");
 const gestureGrid = document.querySelector("#gestureGrid");
 const customizeBtn = document.querySelector("#customizeBtn");
 
-// Read from manifest so version matches extension metadata
-document.querySelector(".version").textContent =
-  `v${chrome.runtime.getManifest().version}`;
-
 const ARROW_MAP = {
   U: "↑",
   D: "↓",
