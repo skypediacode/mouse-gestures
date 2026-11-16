@@ -42,6 +42,8 @@ Browser-level actions are acknowledged only after their `chrome.tabs` or `chrome
 
 Only a gesture that reaches the minimum drawn distance should suppress the following `contextmenu` and `auxclick`. This includes gestures with no mapped action; a short right-click must remain available to the page. Test both cases when changing gesture recognition or event suppression.
 
+On Linux and macOS, Chrome raises `contextmenu` on the right-button press, before any movement, so `content.js` consumes it for the whole press and lets a second right-click within 400ms through to reach the native menu. `popup.js` shows a Linux/macOS-only hint for this. Do not reintroduce a single-click exception (such as on selected text): it made menu activation inconsistent.
+
 ## Diagnosing Slow Actions
 
 Measure before changing anything; this path is unusually easy to misdiagnose. Instrument both halves separately — the time a message spends in transit to the worker, and the time the `chrome.tabs` call itself takes — because they point at completely different causes and only one number is usually the culprit.

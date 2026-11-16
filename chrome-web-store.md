@@ -5,6 +5,10 @@ This document contains optimized metadata and listing copy ready to be filled in
 ---
 ## 1. What's New
 
+v1.0.4
+- Linux gesture fix: slow right-click drags no longer open the browser menu before the gesture starts.
+- Added a popup hint explaining that double right-click opens the native context menu on Linux.
+
 v1.0.3
 - Quick Rate Shortcut: Added a direct Chrome Web Store rating and review button to the toolbar popup header.
 - Cleaner Popup Header: Streamlined header layout for a more spacious and polished quick toolbar UI.

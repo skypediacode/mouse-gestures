@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mouse Gestures – No Tracking & Open Source",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "🛡️ A no-tracking right-click mouse gesture extension that just works. No bloat, no tracking, and 100% open source.",
   "icons": {
     "16": "icons/icon16.png",

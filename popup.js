@@ -19,6 +19,11 @@ function formatGestureArrows(gesture) {
     .join("");
 }
 
+// On Linux and macOS the page menu is blocked on the first right-click (see content.js).
+if (/Linux|Mac/.test(navigator.platform) && !/Android|iPhone|iPad/.test(navigator.userAgent)) {
+  document.querySelector("#linuxHint").hidden = false;
+}
+
 function openOptions() {
   if (chrome.runtime.openOptionsPage) {
     chrome.runtime.openOptionsPage();

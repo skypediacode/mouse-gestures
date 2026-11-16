@@ -212,6 +212,26 @@ body {
   font-weight: 500;
 }
 
+.linux-hint {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #2d3a8c;
+  background: #eef2ff;
+  border: 1px solid #c7d3ff;
+  border-left: 4px solid #5b6ff5;
+  border-radius: 8px;
+}
+
+.linux-hint strong {
+  font-weight: 700;
+}
+
+.linux-hint[hidden] {
+  display: none;
+}
+
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;

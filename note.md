@@ -1,14 +1,16 @@
-Please review all changes from **commit 220fe394fa76352f79caab5b88386d623a728f4d** (inclusive) to the current HEAD, then:
-$version = 1.0.3
+
+Please review all changes from **commit 9b866927be5bbd8a69e608a0a277772cd08224ae** (inclusive) to the current HEAD, then:
+$version = 1.0.4
 - Bump the application version to `$version`.
 - Update **CHANGELOG.md** with the changes included in this release.
 - Update **AGENTS.md** if necessary to reflect any new development guidelines or project changes.
 - Add a concise **What's New** section for version `$version` to **chrome-web-store.md** to be used for publishing on Chrome web store.
 - zip the extension to mouse-gestures-v$version.zip
-- Create a Git commit  (including note.md) with the following message: `1.0.3: Add store rating shortcut to popup header and streamline UI`
+- Create a Git commit  (including note.md)
+
+
 
 *Suggest an appropriate concise Git commit message for the current git changes
-
 $version = 1.0.2
 zip the extension into mouse-gestures-v$version.zip
 

@@ -13,6 +13,8 @@
   const MIN_POINT_SPACING_SQUARED = 16;
 
   const SVG_NS = "http://www.w3.org/2000/svg";
+  // Chrome raises contextmenu on the right-button press (not release) on Linux and macOS.
+  const MENU_ON_PRESS = /Linux|Mac/.test(navigator.platform) && !/Android|iPhone|iPad/.test(navigator.userAgent);
 
   // GESTURE_ACTIONS, ACTION_LABELS, DEFAULT_GESTURES and toGestureMap come from
   // actions.js, loaded ahead of this file by the manifest.
@@ -62,6 +64,9 @@
 
   let gesture = null;
   let suppressNextContextMenu = false;
+  // Linux/macOS only: release time of the last right-click that drew no gesture.
+  const DOUBLE_CLICK_MS = 400;
+  let lastPlainClickTime = 0;
   // A right-button release also raises auxclick, which pages listen to just as
   // readily as contextmenu; leaving it through reintroduces the page work the
   // mouseup guard exists to avoid.
@@ -410,12 +415,16 @@
     move(event, true);
     const action = recognizedGesture();
     const isGesture = gesture.distanceSquared >= MIN_GESTURE_DISTANCE_SQUARED;
+    // Already consumed during the drag (Linux/macOS); arming the flag again
+    // would swallow the next genuine right-click menu.
+    const menuConsumed = gesture.menuConsumed;
     gesture = null;
 
     // A drawn gesture is always consumed, even when no action is mapped to it.
     // A short right-click remains available to the page's normal context menu.
+    lastPlainClickTime = isGesture ? 0 : event.timeStamp;
     if (isGesture) {
-      suppressNextContextMenu = true;
+      suppressNextContextMenu = !menuConsumed;
       suppressNextAuxClick = true;
     }
 
@@ -443,6 +452,23 @@
   }, true);
 
   window.addEventListener("contextmenu", (event) => {
+    // Chrome on Linux (and macOS) raises contextmenu on the right-button press,
+    // not the release as Windows does, so it precedes any movement and cannot
+    // be told from a plain right-click. On Linux/macOS it is therefore consumed for
+    // the whole press; elsewhere only once the drag passes the start threshold.
+    // A second right-click shortly after a plain one is let through, which is
+    // how the native menu is reached there.
+    if (MENU_ON_PRESS && gesture && lastPlainClickTime &&
+        event.timeStamp - lastPlainClickTime < DOUBLE_CLICK_MS) {
+      lastPlainClickTime = 0;
+      return;
+    }
+    if (gesture && (MENU_ON_PRESS || gesture.distanceSquared >= START_THRESHOLD_SQUARED)) {
+      gesture.menuConsumed = true;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (suppressNextContextMenu) {
       suppressNextContextMenu = false;
       event.preventDefault();

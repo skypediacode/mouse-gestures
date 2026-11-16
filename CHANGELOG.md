@@ -5,6 +5,16 @@ All notable changes to the **Mouse Gestures** extension will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-11-16
+
+### Fixed
+- **Linux/macOS Context Menu Handling**: Right-click gestures now consume Chrome's press-time context menu so slow drags can be recognized. Double right-click to open the native context menu.
+
+### Added
+- **Linux Popup Hint**: The toolbar popup explains how to open the native context menu on Linux/macOS.
+
+---
+
 ## [1.0.3] - 2026-08-27
 
 ### Added
